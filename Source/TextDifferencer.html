@@ -1,0 +1,552 @@
+<html>
+<body>
+
+<div id="divUi">
+
+	<h3>Text Differencer</h3>
+
+	<button onclick="buttonDemo_Clicked();">Load Demo Data</button>
+
+	<p>Enter text passages and click the button to compare differences.</p>
+
+	<label>Before:</label>
+	<br />
+	<textarea id="textareaBefore" cols="80" rows="16"></textarea>
+	<br />
+
+	<label>After:</label>
+	<br />
+	<textarea id="textareaAfter" cols="80" rows="16"></textarea>
+	<br />
+
+	<button onclick="buttonCompare_Clicked();">Compare</button>
+	<br />
+
+	<label>Comparison:</label>
+	<br />
+	<div id="divComparison" style="border:1px solid;"></div>
+
+</div>
+
+<script type="text/javascript">
+
+// ui events
+
+function buttonCompare_Clicked()
+{
+	var d = document;
+
+	var textareaBefore = d.getElementById("textareaBefore");
+	var textareaAfter = d.getElementById("textareaAfter");
+
+	var textBefore = textareaBefore.value;
+	var textAfter = textareaAfter.value;
+
+	var comparer = new Comparer();
+
+	var comparison = comparer.compare(textBefore, textAfter);
+	var comparisonAsString = comparison.toString();
+	var divComparison = d.getElementById("divComparison");
+	divComparison.innerHTML = comparisonAsString;
+}
+
+function buttonDemo_Clicked()
+{
+	var d = document;
+
+	var textareaBefore = d.getElementById("textareaBefore");
+	var textareaAfter = d.getElementById("textareaAfter");
+
+	textareaBefore.value = "a\nb\nc\nd\ne\nf\nx\ny\nz";
+	textareaAfter.value = "a\nb\nc\ng\nh\ni\nx\ny\nz";
+}
+
+function textareaAfter_DraggedOver(event)
+{
+	event.preventDefault();
+}
+
+function textareaAfter_DroppedOnto(event)
+{
+	event.preventDefault();
+
+	var file = event.dataTransfer.files[0];
+	if (file != null)
+	{
+		var fileType = file.type;
+		var isFileText = fileType.startsWith("text/");
+		if (isFileText == true)
+		{
+			var fileReader = new FileReader();
+			fileReader.onload = function(event2)
+			{
+				var fileAsText = event2.target.result;
+				var textareaAfter = event.target;
+				textareaAfter.value = fileAsText;
+			}
+			fileReader.readAsText(file);
+		}
+	}
+}
+
+function textareaBefore_DraggedOver(event)
+{
+	event.preventDefault();
+}
+
+function textareaBefore_DroppedOnto(event)
+{
+	event.preventDefault();
+
+	var file = event.dataTransfer.files[0];
+	if (file != null)
+	{
+		var fileType = file.type;
+		var isFileText = fileType.startsWith("text/");
+		if (isFileText == true)
+		{
+			var fileReader = new FileReader();
+			fileReader.onload = function(event2)
+			{
+				var fileAsText = event2.target.result;
+				var textareaBefore = event.target;
+				textareaBefore.value = fileAsText;
+			}
+			fileReader.readAsText(file);
+		}
+	}
+}
+
+// extensions
+
+function StringExtensions()
+{
+	// Extension class.
+}
+{
+	String.prototype.replace = function(substringToBeReplaced, substringToReplaceWith)
+	{
+		return this.split(substringToBeReplaced).join(substringToReplaceWith);
+	}
+}
+
+// classes
+
+class Comparer
+{
+	compare(before, after)
+	{
+		// This method is very long.
+
+		var newline = "\n";
+
+		var beforeAsLines = before.split(newline);
+		var afterAsLines = after.split(newline);
+
+		var lineGroupsBeforeAndAfter =
+		[
+			new LineGroup(0, beforeAsLines, 0, afterAsLines)
+		];
+
+		var pairsMatching = [];
+
+		while (true)
+		{
+			var doAnyGroupsWithMatchesRemain = false;
+
+			for (var g = 0; g < lineGroupsBeforeAndAfter.length; g++)
+			{
+				var lineGroupBeforeAndAfter = lineGroupsBeforeAndAfter[g];
+				var linesBefore = lineGroupBeforeAndAfter.beforeLines;
+				var linesAfter = lineGroupBeforeAndAfter.afterLines;
+
+				var linesInLongestMatchSoFar = 0;
+				var passagePairForLongestMatchSoFar = null;
+
+				for (var b = 0; b < linesBefore.length; b++)
+				{
+					var lineBefore = linesBefore[b];
+
+					for (var a = 0; a < linesAfter.length; a++)
+					{
+						var lineAfter = linesAfter[a];
+
+						var lineBefore2 = lineBefore;
+						var bb = b;
+						var aa = a;
+
+						var numberOfLinesMatching = 0;
+
+						while
+						(
+							bb < linesBefore.length
+							&& aa < linesAfter.length
+						)
+						{
+							var lineBb = linesBefore[bb];
+							var lineAa = linesAfter[aa];
+
+							if (lineBb == lineAa)
+							{
+								numberOfLinesMatching++;
+							}
+							else
+							{
+								break;
+							}
+
+							bb++;
+							aa++;
+						}
+
+						if (numberOfLinesMatching > linesInLongestMatchSoFar)
+						{
+							linesInLongestMatchSoFar = numberOfLinesMatching;
+							passagePairForLongestMatchSoFar = new ComparisonPassagePair
+							(
+								true, // areBeforeAndAfterSame
+								b, // beforeOffset
+								numberOfLinesMatching, // beforeLength
+								a, // afterOffset
+								numberOfLinesMatching // afterLength
+							);
+						}
+
+					} // end for a
+
+				} // end for b
+
+				if (linesInLongestMatchSoFar > 0)
+				{
+					doAnyGroupsWithMatchesRemain = true;
+
+					var pairMatching = passagePairForLongestMatchSoFar;
+
+					var linesBeforePrecedingMatch = linesBefore.slice
+					(
+						0,
+						pairMatching.beforeOffset
+					);
+					var linesBeforeFollowingMatch = linesBefore.slice
+					(
+						pairMatching.beforeEnd()
+					);
+
+					var linesAfterPrecedingMatch = linesAfter.slice
+					(
+						0,
+						pairMatching.afterOffset
+					);
+					var linesAfterFollowingMatch = linesAfter.slice
+					(
+						pairMatching.afterEnd()
+					);
+
+					lineGroupsBeforeAndAfter.splice(g, 1);
+
+					if
+					(
+						linesBeforeFollowingMatch.length > 0
+						|| linesAfterFollowingMatch.length > 0
+					)
+					{
+						var lineGroupFollowingMatch = new LineGroup
+						(
+							lineGroupBeforeAndAfter.beforeOffset + pairMatching.beforeEnd(),
+							linesBeforeFollowingMatch,
+							lineGroupBeforeAndAfter.afterOffset + pairMatching.afterEnd(),
+							linesAfterFollowingMatch
+						);
+						lineGroupsBeforeAndAfter.splice
+						(
+							g, 0, lineGroupFollowingMatch
+						);
+					}
+
+					if
+					(
+						linesBeforePrecedingMatch.length > 0
+						|| linesAfterPrecedingMatch.length > 0
+					)
+					{
+						var lineGroupPrecedingMatch = new LineGroup
+						(
+							lineGroupBeforeAndAfter.beforeOffset,
+							linesBeforePrecedingMatch,
+							lineGroupBeforeAndAfter.afterOffset,
+							linesAfterPrecedingMatch
+						);
+						lineGroupsBeforeAndAfter.splice
+						(
+							g, 0, lineGroupPrecedingMatch
+						);
+					}
+
+					pairMatching.beforeOffset +=
+						lineGroupBeforeAndAfter.beforeOffset;
+					pairMatching.afterOffset +=
+						lineGroupBeforeAndAfter.afterOffset;
+					pairsMatching.push(pairMatching);
+
+					break; // g
+				}
+
+			} // end for each group
+
+			if (doAnyGroupsWithMatchesRemain == false)
+			{
+				break;
+			}
+
+		} // end while
+
+		var pairsToSort = pairsMatching;
+		var pairsSorted = [];
+
+		for (var i = 0; i < pairsToSort.length; i++)
+		{
+			var pairToSort = pairsToSort[i];
+
+			var j;
+			for (j = i; j < pairsSorted.length; j++)
+			{
+				var pairSorted = pairsSorted[j];
+				if (pairToSort.beforeIndex <= pairSorted.beforeIndex)
+				{
+					break;
+				}
+			}
+
+			pairsSorted.splice(j, 0, pairToSort);
+		}
+
+		var pairsMatchingToInterleave = pairsSorted;
+		var pairsInterleaved = [];
+
+		// todo - Lost some code here.  Not sure how to recover.
+		for (var i = 0; i < pairsMatchingToInterleave.length - 1; i++)
+		{
+			var pairMatching = pairsMatchingToInterleave[i];
+			var pairMatchingNext = pairsMatchingToInterleave[i + 1];
+
+			pairsInterleaved.push(pairMatching);
+
+			var pairMatchingPassageLength =
+				pairMatching.beforeLength;
+
+			var pairMatchingBeforeEnd = pairMatching.beforeEnd();
+			var pairMatchingAfterEnd = pairMatching.afterEnd();
+
+			var pairDiffering = new ComparisonPassagePair
+			(
+				false, // areBeforeAndAfterSame
+				pairMatchingBeforeEnd, // beforeOffset
+				pairMatchingNext.beforeOffset - pairMatchingBeforeEnd, // beforeLength
+				pairMatchingAfterEnd, // afterOffset
+				pairMatchingNext.afterOffset - pairMatchingAfterEnd, // afterLength
+			);
+
+			pairsInterleaved.push(pairDiffering);
+		}
+
+		var pairMatchingFirst = pairsMatchingToInterleave[0];
+
+		if
+		(
+			pairMatchingFirst.beforeOffset > 0
+			|| pairMatchingFirst.afterOffset > 0
+		)
+		{
+			var pairDifferingFirst = new ComparisonPassagePair
+			(
+				false, // areBeforeAndAfterSame
+				0, // beforeOffset
+				pairMatchingFirst.beforeOffset, // beforeLength
+				0, // afterOffset
+				pairMatchingFirst.afterOffset // afterLength
+			);
+
+			pairsInterleaved.splice(0, 0, pairDifferingFirst);
+		}
+
+		
+
+		var pairMatchingFinal =
+			pairsMatchingToInterleave[pairsMatchingToInterleave.length - 1];
+		pairsInterleaved.push(pairMatchingFinal);
+
+		var pairMatchingFinalBeforeEnd = pairMatchingFinal.beforeEnd();
+		var pairMatchingFinalAfterEnd = pairMatchingFinal.afterEnd();
+
+		if
+		(
+			pairMatchingFinalBeforeEnd < beforeAsLines.length
+			|| pairMatchingFinalAfterEnd < afterAsLines.length
+		)
+		{
+			var pairDifferingFinal = new ComparisonPassagePair
+			(
+				pairMatchingFinalBeforeEnd,
+				beforeAsLines.length - pairMatchingFinalBeforeEnd,
+				pairMatchingFinalAfterEnd,
+				afterAsLines.length - pairMatchingFinalAfterEnd
+			);
+
+			pairsInterleaved.push(pairDifferingFinal);
+		}
+
+		var pairsAll = pairsInterleaved;
+
+		var returnValue = new Comparison
+		(
+			beforeAsLines,
+			afterAsLines,
+			pairsAll
+		);
+
+		return returnValue;
+
+	} // end function
+}
+
+class Comparison
+{
+	constructor(beforeAsLines, afterAsLines, passagePairs)
+	{
+		this.beforeAsLines = beforeAsLines;
+		this.afterAsLines = afterAsLines;
+		this.passagePairs = passagePairs;
+	}
+
+	toString()
+	{
+		var returnValue = "";
+
+		var newline = "\n";
+
+		for (var i = 0; i < this.passagePairs.length; i++)
+		{
+			var pair = this.passagePairs[i];
+			var pairAsString = pair.toString(this);
+			returnValue += pairAsString + newline;
+		}
+
+		return returnValue;
+	}
+}
+
+class ComparisonPassagePair
+{
+	constructor
+	(
+		areBeforeAndAfterSame,
+		beforeOffset,
+		beforeLength,
+		afterOffset,
+		afterLength
+	)
+	{
+		this.areBeforeAndAfterSame = areBeforeAndAfterSame;
+		this.beforeOffset = beforeOffset;
+		this.beforeLength = beforeLength;
+		this.afterOffset = afterOffset;
+		this.afterLength = afterLength;
+	}
+
+	after(afterAsLines)
+	{
+		var returnValue = "";
+		var newline = "\n";
+
+		for (var i = 0; i < this.afterLength; i++)
+		{
+			var line = afterAsLines[this.afterOffset + i];
+			returnValue += line + newline;
+		}
+
+		return returnValue;
+	}
+
+	afterEnd()
+	{
+		return this.afterOffset + this.afterLength;
+	}
+
+	before(beforeAsLines)
+	{
+		var returnValue = "";
+		var newline = "\n";
+
+		for (var i = 0; i < this.beforeLength; i++)
+		{
+			var line = beforeAsLines[this.beforeOffset + i];
+			returnValue += line + newline;
+		}
+		return returnValue;
+	}
+
+	beforeEnd()
+	{
+		return this.beforeOffset + this.beforeLength;
+	}
+
+	toString(comparison)
+	{
+		var returnValue = "";
+
+		if (this.areBeforeAndAfterSame)
+		{
+			returnValue = this.before(comparison.beforeAsLines);
+			returnValue = this.escapeStringForHTML(returnValue);
+		}
+		else
+		{
+			returnValue += "<mark style='background-color:Pink'>";
+			returnValue += this.escapeStringForHTML
+			(
+				this.before(comparison.beforeAsLines)
+			);
+			returnValue += "</mark><mark style='background-color:LightGreen'>";
+			returnValue += this.escapeStringForHTML
+			(
+				this.after(comparison.afterAsLines)
+			);
+			returnValue += "</mark>";
+
+		}
+
+		return returnValue;
+	}
+
+	escapeStringForHTML(stringToEscape)
+	{
+		var returnValue = stringToEscape.replace
+		(
+			"&", "&amp;"
+		).replace
+		(
+			"<", "&lt;"
+		).replace
+		(
+			">", "&gt;"
+		).replace
+		(
+			"\n", "<br />"
+		);
+
+		return returnValue;
+	}
+}
+
+class LineGroup
+{
+	constructor(beforeOffset, beforeLines, afterOffset, afterLines)
+	{
+		this.beforeOffset = beforeOffset;
+		this.beforeLines = beforeLines;
+		this.afterOffset = afterOffset;
+		this.afterLines = afterLines;
+	}
+}
+
+</script>
